@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,18 +10,43 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState('');
+  const [localError, setLocalError] = useState('');
+
   const { t } = useLanguage();
-  const { login } = useAuth();
+  const { login, loginWithGoogle, loginWithFacebook, error, clearError } = useAuth();
   const navigate = useNavigate();
+
+  const displayError = localError || error;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError('');
+    clearError();
     setLoading(true);
-    setTimeout(() => {
-      login(email, password);
-      setLoading(false);
+    const result = await login(email, password);
+    setLoading(false);
+    if (result.success) {
       navigate('/dashboard');
-    }, 800);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setSocialLoading('google');
+    clearError();
+    setLocalError('');
+    const result = await loginWithGoogle();
+    setSocialLoading('');
+    if (result.success) navigate('/dashboard');
+  };
+
+  const handleFacebook = async () => {
+    setSocialLoading('facebook');
+    clearError();
+    setLocalError('');
+    const result = await loginWithFacebook();
+    setSocialLoading('');
+    if (result.success) navigate('/dashboard');
   };
 
   return (
@@ -47,6 +72,19 @@ export default function LoginPage() {
 
         {/* Form Card */}
         <div className="bg-white dark:bg-[#1a2e1a] rounded-2xl border border-gray-100 dark:border-[#2d4a2d] shadow-sm p-8">
+
+          {/* Error Banner */}
+          {displayError && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl p-3 mb-5"
+            >
+              <AlertCircle size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-red-600 dark:text-red-400">{displayError}</p>
+            </motion.div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
@@ -58,7 +96,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setLocalError(''); clearError(); }}
                   placeholder="farmer@kishanghar.com"
                   className="input !pl-10"
                   required
@@ -76,7 +114,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setLocalError(''); clearError(); }}
                   placeholder="••••••••"
                   className="input !pl-10 !pr-10"
                   required
@@ -105,7 +143,7 @@ export default function LoginPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!socialLoading}
               className="btn-primary w-full justify-center !py-3 text-base disabled:opacity-50"
             >
               {loading ? (
@@ -126,14 +164,40 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-gray-200 dark:bg-[#2d4a2d]" />
           </div>
 
-          {/* Social */}
+          {/* Social Buttons */}
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#2d4a2d] text-sm font-medium text-[#1a1a2e] dark:text-white hover:bg-gray-50 dark:hover:bg-[#162016] transition-colors">
-              <svg className="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            {/* Google */}
+            <button
+              onClick={handleGoogle}
+              disabled={loading || !!socialLoading}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#2d4a2d] text-sm font-medium text-[#1a1a2e] dark:text-white hover:bg-gray-50 dark:hover:bg-[#162016] transition-colors disabled:opacity-50"
+            >
+              {socialLoading === 'google' ? (
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-[#4285F4] rounded-full animate-spin" />
+              ) : (
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+              )}
               {t('auth.google')}
             </button>
-            <button className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#2d4a2d] text-sm font-medium text-[#1a1a2e] dark:text-white hover:bg-gray-50 dark:hover:bg-[#162016] transition-colors">
-              <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+
+            {/* Facebook */}
+            <button
+              onClick={handleFacebook}
+              disabled={loading || !!socialLoading}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-[#2d4a2d] text-sm font-medium text-[#1a1a2e] dark:text-white hover:bg-gray-50 dark:hover:bg-[#162016] transition-colors disabled:opacity-50"
+            >
+              {socialLoading === 'facebook' ? (
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-[#1877F2] rounded-full animate-spin" />
+              ) : (
+                <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              )}
               {t('auth.facebook')}
             </button>
           </div>

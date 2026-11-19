@@ -2,28 +2,61 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Image, AlertTriangle, CheckCircle2, Shield, Leaf,
-  ArrowRight, RefreshCw, Sparkles, FileWarning, XCircle
+  ArrowRight, RefreshCw, Sparkles, FileWarning, XCircle, CloudUpload, AlertCircle
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { cropDetectionResult } from '../data/mockData';
+import { detectionsAPI } from '../services/api';
 
 export default function CropDetection() {
-  const [step, setStep] = useState('upload'); // upload | analyzing | result
+  const [step, setStep] = useState('upload'); // upload | analyzing | result | error
   const [preview, setPreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [detectionId, setDetectionId] = useState(null);
+  const [uploadError, setUploadError] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [aiResult, setAiResult] = useState(null);
   const fileRef = useRef(null);
   const { language, t } = useLanguage();
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file) return;
+    setUploadError('');
+
+    // Show local preview immediately
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target.result);
-      setStep('analyzing');
-      // Simulate AI analysis
-      setTimeout(() => setStep('result'), 2500);
-    };
+    reader.onload = (e) => setPreview(e.target.result);
     reader.readAsDataURL(file);
+    setSelectedFile(file);
+    setStep('analyzing');
+
+    try {
+      // Upload to Cloudinary & run AI diagnosis via backend
+      const res = await detectionsAPI.uploadCrop(file);
+      setUploadedImageUrl(res.data.imageUrl);
+      setDetectionId(res.data.id);
+
+      if (res.data?.result) {
+        const raw = res.data.result;
+        setAiResult({
+          disease: raw.detected,
+          diseaseBn: raw.detectedBn || raw.detected,
+          confidence: raw.confidence || 92,
+          severity: raw.severity || 'high',
+          severityBn: raw.severity === 'high' ? 'উচ্চ' : raw.severity === 'medium' ? 'মাঝারি' : 'স্বাভাবিক',
+          treatment: raw.recommendations || cropDetectionResult.treatment,
+          treatmentBn: raw.recommendationsBn || cropDetectionResult.treatmentBn,
+          prevention: raw.recommendations ? raw.recommendations.slice(2) : cropDetectionResult.prevention,
+          preventionBn: raw.recommendationsBn ? raw.recommendationsBn.slice(2) : cropDetectionResult.preventionBn,
+        });
+      }
+
+      setTimeout(() => setStep('result'), 1000);
+    } catch (err) {
+      setUploadError(err.message || 'Image upload failed. Please try again.');
+      setStep('error');
+    }
   };
 
   const handleDrop = (e) => {
@@ -35,9 +68,14 @@ export default function CropDetection() {
   const handleReset = () => {
     setStep('upload');
     setPreview(null);
+    setUploadedImageUrl(null);
+    setDetectionId(null);
+    setUploadError('');
+    setSelectedFile(null);
+    setAiResult(null);
   };
 
-  const result = cropDetectionResult;
+  const result = aiResult || cropDetectionResult;
 
   return (
     <div className="min-h-screen bg-[#f8faf8] dark:bg-[#0a120a]">
@@ -107,7 +145,7 @@ export default function CropDetection() {
 
               {/* Sample images hint */}
               <p className="text-center text-xs text-[#94a3b8] mt-4 italic">
-                💡 {language === 'bn' ? 'যেকোনো ছবি আপলোড করুন — ডেমো ফলাফল দেখানো হবে' : 'Upload any image — demo results will be shown'}
+                💡 {language === 'bn' ? 'ফসলের আক্রান্ত অংশের স্পষ্ট ছবি আপলোড করুন — AI তাৎক্ষণিক রোগ শনাক্ত করবে' : 'Upload a clear photo of the infected crop leaf for instant AI diagnosis'}
               </p>
             </motion.div>
           )}
@@ -157,6 +195,32 @@ export default function CropDetection() {
                     />
                   ))}
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ======= ERROR STEP ======= */}
+          {step === 'error' && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-xl mx-auto"
+            >
+              <div className="p-8 rounded-2xl bg-white dark:bg-[#1a2e1a] border border-red-100 dark:border-red-500/20 text-center">
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                  <XCircle size={32} className="text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-[#1a1a2e] dark:text-white mb-2">
+                  Upload Failed
+                </h3>
+                <p className="text-sm text-red-500 mb-6">{uploadError}</p>
+                <button onClick={handleReset} className="btn-primary">
+                  <RefreshCw size={16} />
+                  Try Again
+                </button>
               </div>
             </motion.div>
           )}

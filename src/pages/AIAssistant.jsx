@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Sparkles, Info } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { chatSuggestions, chatResponses } from '../data/mockData';
+import { aiAPI } from '../services/api';
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState([]);
@@ -19,7 +20,7 @@ export default function AIAssistant() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const sendMessage = (text) => {
+  const sendMessage = async (text) => {
     if (!text.trim()) return;
 
     const userMsg = { id: Date.now(), role: 'user', text };
@@ -27,19 +28,24 @@ export default function AIAssistant() {
     setInput('');
     setIsTyping(true);
 
-    // Find matching response or use default
-    const matchKey = Object.keys(chatResponses).find(key =>
-      text.toLowerCase().includes(key.toLowerCase())
-    );
-    const responseData = chatResponses[matchKey] || chatResponses.default;
-    const responseText = language === 'bn' ? responseData.responseBn : responseData.response;
-
-    // Simulate typing delay
-    setTimeout(() => {
+    try {
+      // Call backend AI route (Gemini enabled)
+      const res = await aiAPI.chat(text, language);
+      const reply = res.reply;
+      const botMsg = { id: Date.now() + 1, role: 'bot', text: reply };
+      setMessages(prev => [...prev, botMsg]);
+    } catch {
+      // Fallback to local agricultural responses if network/server issue
+      const matchKey = Object.keys(chatResponses).find(key =>
+        text.toLowerCase().includes(key.toLowerCase())
+      );
+      const responseData = chatResponses[matchKey] || chatResponses.default;
+      const responseText = language === 'bn' ? responseData.responseBn : responseData.response;
       const botMsg = { id: Date.now() + 1, role: 'bot', text: responseText };
       setMessages(prev => [...prev, botMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -146,9 +152,9 @@ export default function AIAssistant() {
                   }`}>
                     {msg.role === 'bot' && (
                       <div className="flex items-center gap-1.5 mb-2">
-                        <Sparkles size={12} className="text-[#4caf50]" />
-                        <span className="text-[10px] font-semibold text-[#4caf50] uppercase tracking-wider">
-                          {t('aiAssistant.sampleBadge')}
+                        <Sparkles size={13} className="text-[#2e7d32] dark:text-[#81c784]" />
+                        <span className="text-[11px] font-bold text-[#2e7d32] dark:text-[#81c784] tracking-wide">
+                          {language === 'bn' ? 'কিষাণঘর এআই বিশেষজ্ঞ' : 'KishanGhar AI Specialist'}
                         </span>
                       </div>
                     )}

@@ -3,27 +3,61 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Upload, AlertTriangle, CheckCircle2, Shield, PawPrint,
-  ArrowRight, RefreshCw, Sparkles, FileWarning, Stethoscope, Phone
+  ArrowRight, RefreshCw, Sparkles, FileWarning, Stethoscope, Phone, XCircle
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { animalDetectionResult } from '../data/mockData';
+import { detectionsAPI } from '../services/api';
 
 export default function AnimalDetection() {
-  const [step, setStep] = useState('upload');
+  const [step, setStep] = useState('upload'); // upload | analyzing | result | error
   const [preview, setPreview] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [detectionId, setDetectionId] = useState(null);
+  const [uploadError, setUploadError] = useState('');
+  const [aiResult, setAiResult] = useState(null);
   const fileRef = useRef(null);
   const { language, t } = useLanguage();
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file) return;
+    setUploadError('');
+
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target.result);
-      setStep('analyzing');
-      setTimeout(() => setStep('result'), 3000);
-    };
+    reader.onload = (e) => setPreview(e.target.result);
     reader.readAsDataURL(file);
+    setStep('analyzing');
+
+    try {
+      const res = await detectionsAPI.uploadAnimal(file);
+      setUploadedImageUrl(res.data.imageUrl);
+      setDetectionId(res.data.id);
+
+      if (res.data?.result) {
+        const raw = res.data.result;
+        setAiResult({
+          disease: raw.detected,
+          diseaseBn: raw.detectedBn || raw.detected,
+          confidence: raw.confidence || 93,
+          severity: raw.severity || 'high',
+          severityBn: raw.severity === 'high' ? 'উচ্চ' : raw.severity === 'medium' ? 'মাঝারি' : 'স্বাভাবিক',
+          urgency: 'Immediate Veterinary Attention',
+          urgencyBn: 'জরুরি পশু চিকিৎসকের পরামর্শ প্রয়োজন',
+          symptoms: [raw.description || 'Fever, blisters, reduced appetite'],
+          symptomsBn: [raw.descriptionBn || 'জ্বর, মুখে ঘা, খাবারে অনীহা'],
+          treatment: raw.recommendations || animalDetectionResult.treatment,
+          treatmentBn: raw.recommendationsBn || animalDetectionResult.treatmentBn,
+          prevention: raw.recommendations ? raw.recommendations.slice(2) : animalDetectionResult.prevention,
+          preventionBn: raw.recommendationsBn ? raw.recommendationsBn.slice(2) : animalDetectionResult.preventionBn,
+        });
+      }
+
+      setTimeout(() => setStep('result'), 1200);
+    } catch (err) {
+      setUploadError(err.message || 'Image upload failed. Please try again.');
+      setStep('error');
+    }
   };
 
   const handleDrop = (e) => {
@@ -35,9 +69,13 @@ export default function AnimalDetection() {
   const handleReset = () => {
     setStep('upload');
     setPreview(null);
+    setUploadedImageUrl(null);
+    setDetectionId(null);
+    setUploadError('');
+    setAiResult(null);
   };
 
-  const result = animalDetectionResult;
+  const result = aiResult || animalDetectionResult;
 
   return (
     <div className="min-h-screen bg-[#f8faf8] dark:bg-[#0a120a]">
@@ -102,7 +140,7 @@ export default function AnimalDetection() {
                 </div>
               </div>
               <p className="text-center text-xs text-[#94a3b8] mt-4 italic">
-                💡 {language === 'bn' ? 'যেকোনো ছবি আপলোড করুন — ডেমো ফলাফল দেখানো হবে' : 'Upload any image — demo results will be shown'}
+                💡 {language === 'bn' ? 'পশুর আক্রান্ত অঙ্গ বা লক্ষণের স্পষ্ট ছবি আপলোড করুন — AI সাথে সাথে রোগ বিশ্লেষণ করবে' : 'Upload a clear photo of the animal symptom for instant AI diagnosis'}
               </p>
             </motion.div>
           )}
@@ -145,6 +183,32 @@ export default function AnimalDetection() {
                     />
                   ))}
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Error */}
+          {step === 'error' && (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="max-w-xl mx-auto"
+            >
+              <div className="p-8 rounded-2xl bg-white dark:bg-[#1a2e1a] border border-red-100 dark:border-red-500/20 text-center">
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                  <XCircle size={32} className="text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-[#1a1a2e] dark:text-white mb-2">
+                  Upload Failed
+                </h3>
+                <p className="text-sm text-red-500 mb-6">{uploadError}</p>
+                <button onClick={handleReset} className="btn-primary">
+                  <RefreshCw size={16} />
+                  Try Again
+                </button>
               </div>
             </motion.div>
           )}

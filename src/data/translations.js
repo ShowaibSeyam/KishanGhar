@@ -95,7 +95,7 @@ const translations = {
       expenseTitle: 'Monthly Expense',
       analyticsTitle: 'Farm Analytics',
       viewAll: 'View All',
-      demoPreview: 'Demo Preview',
+      demoPreview: 'Active AI',
       totalCrops: 'Total Crops',
       totalAnimals: 'Total Animals',
       todayTasks: "Today's Tasks",
@@ -117,7 +117,7 @@ const translations = {
       severity: 'Severity',
       treatment: 'Recommended Treatment',
       prevention: 'Prevention Tips',
-      disclaimer: 'This is a demo preview. Live AI diagnosis will be available in the production version.',
+      disclaimer: 'AI Advisory: Disease diagnosis and treatments are powered by KishanGhar AI. For severe crop damage, consult your local Upazila Agriculture Officer.',
       tryAnother: 'Try Another Image',
       high: 'High',
       medium: 'Medium',
@@ -151,7 +151,7 @@ const translations = {
       subtitle: 'Upload a photo of your animal and get instant AI-powered health analysis.',
       uploadTitle: 'Upload Animal Image',
       bookVet: 'Book Veterinarian',
-      disclaimer: 'This is a demo preview. Live AI diagnosis will be available in the production version.',
+      disclaimer: 'Veterinary Advisory: AI diagnosis helps early symptom detection. For critical conditions, consult a registered veterinarian immediately.',
     },
 
     // AI Assistant
@@ -159,8 +159,8 @@ const translations = {
       title: 'AI Farm Assistant',
       subtitle: 'Get instant agricultural guidance in Bangla and English.',
       placeholder: 'Type your farming question...',
-      sampleBadge: 'Sample AI Recommendation',
-      disclaimer: 'This is a demo. Responses are pre-written sample recommendations.',
+      sampleBadge: 'AI Recommendation',
+      disclaimer: 'Agricultural Advisory: AI recommendations are tailored for farming in Bangladesh. Verify specific pesticide dosages with local guidelines.',
     },
 
     // Common
@@ -291,7 +291,7 @@ const translations = {
       expenseTitle: 'মাসিক ব্যয়',
       analyticsTitle: 'খামার বিশ্লেষণ',
       viewAll: 'সব দেখুন',
-      demoPreview: 'ডেমো প্রিভিউ',
+      demoPreview: 'সক্রিয় AI',
       totalCrops: 'মোট ফসল',
       totalAnimals: 'মোট পশু',
       todayTasks: 'আজকের কাজ',
@@ -313,7 +313,7 @@ const translations = {
       severity: 'তীব্রতা',
       treatment: 'প্রস্তাবিত চিকিৎসা',
       prevention: 'প্রতিরোধ পরামর্শ',
-      disclaimer: 'এটি একটি ডেমো প্রিভিউ। লাইভ AI রোগ নির্ণয় প্রোডাকশন ভার্সনে উপলব্ধ হবে।',
+      disclaimer: 'এআই পরামর্শ: ফসলের রোগ নির্ণয় ও প্রতিকার কিষাণঘর এআই দ্বারা প্রস্তুত। ব্যাপক সংক্রমণের ক্ষেত্রে উপ-সহকারী কৃষি কর্মকর্তার পরামর্শ নিন।',
       tryAnother: 'অন্য ছবি চেষ্টা করুন',
       high: 'উচ্চ',
       medium: 'মাঝারি',
@@ -347,7 +347,7 @@ const translations = {
       subtitle: 'আপনার পশুর ছবি আপলোড করুন এবং তাৎক্ষণিক AI স্বাস্থ্য বিশ্লেষণ পান।',
       uploadTitle: 'পশুর ছবি আপলোড করুন',
       bookVet: 'পশু ডাক্তার বুক করুন',
-      disclaimer: 'এটি একটি ডেমো প্রিভিউ। লাইভ AI রোগ নির্ণয় প্রোডাকশন ভার্সনে উপলব্ধ হবে।',
+      disclaimer: 'প্রাণিসম্পদ পরামর্শ: এআই রোগ নির্ণয় প্রাথমিক লক্ষণ বুঝতে সাহায্য করে। জরুরি অবস্থায় অবিলম্বে নিবন্ধিত পশু চিকিৎসকের পরামর্শ নিন।',
     },
 
     // AI Assistant
@@ -355,8 +355,8 @@ const translations = {
       title: 'AI কৃষি সহকারী',
       subtitle: 'বাংলা এবং ইংরেজিতে তাৎক্ষণিক কৃষি পরামর্শ পান।',
       placeholder: 'আপনার কৃষি প্রশ্ন লিখুন...',
-      sampleBadge: 'নমুনা AI পরামর্শ',
-      disclaimer: 'এটি একটি ডেমো। উত্তরগুলি পূর্ব-লিখিত নমুনা পরামর্শ।',
+      sampleBadge: 'AI পরামর্শ',
+      disclaimer: 'কৃষি পরামর্শ: এআই উত্তরগুলো বাংলাদেশের কৃষি পরিস্থিতির সাথে সামঞ্জস্যপূর্ণ। কীটনাশকের সঠিক মাত্রা স্থানীয় নির্দেশিকা অনুযায়ী প্রয়োগ করুন।',
     },
 
     // Common

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   CloudSun, Droplets, Wind, CheckCircle2, Circle, AlertTriangle,
@@ -7,8 +8,9 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { weatherData, tasks, crops, livestock, aiInsights, alerts, incomeData } from '../data/mockData';
+import { weatherData, tasks as initialTasks, crops, livestock, aiInsights, alerts, incomeData } from '../data/mockData';
 import { Link } from 'react-router-dom';
+import { fetchLiveWeather } from '../services/weather';
 
 const cardAnim = {
   initial: { opacity: 0, y: 20 },
@@ -18,6 +20,21 @@ const cardAnim = {
 export default function Dashboard() {
   const { language, t } = useLanguage();
   const { user } = useAuth();
+
+  const [currentWeather, setCurrentWeather] = useState(weatherData);
+  const [taskList, setTaskList] = useState(initialTasks);
+
+  useEffect(() => {
+    async function loadWeather() {
+      const data = await fetchLiveWeather(user?.location || 'Dhaka');
+      if (data) setCurrentWeather(data);
+    }
+    loadWeather();
+  }, [user?.location]);
+
+  const toggleTask = (id) => {
+    setTaskList(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  };
 
   const totalIncome = 72000;
   const totalExpense = 27000;
@@ -56,7 +73,7 @@ export default function Dashboard() {
           {[
             { label: t('dashboard.totalCrops'), value: crops.length, icon: Leaf, color: '#2e7d32', bg: '#e8f5e9', change: '+2' },
             { label: t('dashboard.totalAnimals'), value: cowCount + goatCount + chickenCount + duckCount, icon: PawPrint, color: '#1565c0', bg: '#e3f2fd', change: '+5' },
-            { label: t('dashboard.todayTasks'), value: `${tasks.filter(t => t.done).length}/${tasks.length}`, icon: CheckCircle2, color: '#e65100', bg: '#fff3e0', change: null },
+            { label: t('dashboard.todayTasks'), value: `${taskList.filter(t => t.done).length}/${taskList.length}`, icon: CheckCircle2, color: '#e65100', bg: '#fff3e0', change: null },
             { label: t('dashboard.aiRecommendations'), value: aiInsights.length, icon: Brain, color: '#6a1b9a', bg: '#f3e5f5', change: 'New' },
           ].map((stat, i) => (
             <motion.div
@@ -94,27 +111,30 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 text-white/80 text-sm mb-1">
                       <CloudSun size={16} />
                       <span>{t('dashboard.weatherTitle')}</span>
+                      <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold">Live</span>
                     </div>
-                    <p className="text-sm text-white/70">{weatherData.location}</p>
+                    <p className="text-sm text-white/70">
+                      {language === 'bn' ? currentWeather.locationBn || currentWeather.location : currentWeather.location}
+                    </p>
                   </div>
-                  <span className="text-5xl">{weatherData.icon}</span>
+                  <span className="text-5xl">{currentWeather.icon}</span>
                 </div>
                 <div className="flex items-end gap-2 mb-4">
-                  <span className="text-5xl font-bold">{weatherData.temperature}°</span>
-                  <span className="text-lg text-white/70 mb-1">{language === 'bn' ? weatherData.conditionBn : weatherData.condition}</span>
+                  <span className="text-5xl font-bold">{currentWeather.temperature}°</span>
+                  <span className="text-lg text-white/70 mb-1">{language === 'bn' ? currentWeather.conditionBn : currentWeather.condition}</span>
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-1.5 text-sm text-white/80">
                     <Droplets size={14} />
-                    <span>{weatherData.humidity}%</span>
+                    <span>{currentWeather.humidity}%</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-sm text-white/80">
                     <Wind size={14} />
-                    <span>{weatherData.windSpeed} km/h</span>
+                    <span>{currentWeather.windSpeed} km/h</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/15">
-                  {weatherData.forecast.map((day, i) => (
+                  {currentWeather.forecast.map((day, i) => (
                     <div key={i} className="text-center flex-1">
                       <p className="text-xs text-white/60 mb-1">{day.day}</p>
                       <span className="text-lg">{day.icon}</span>
@@ -233,19 +253,28 @@ export default function Dashboard() {
 
             {/* Today's Tasks */}
             <motion.div {...cardAnim} transition={{ delay: 0.4 }} className="p-5 rounded-xl bg-white dark:bg-[#1a2e1a] border border-gray-100 dark:border-[#2d4a2d]">
-              <h3 className="text-base font-semibold text-[#1a1a2e] dark:text-white mb-3 flex items-center gap-2">
-                <CheckCircle2 size={18} className="text-[#4caf50]" />
-                {t('dashboard.tasksTitle')}
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-semibold text-[#1a1a2e] dark:text-white flex items-center gap-2">
+                  <CheckCircle2 size={18} className="text-[#4caf50]" />
+                  {t('dashboard.tasksTitle')}
+                </h3>
+                <span className="text-xs text-[#94a3b8]">
+                  {taskList.filter(t => t.done).length}/{taskList.length}
+                </span>
+              </div>
               <div className="space-y-2.5">
-                {tasks.map((task) => (
-                  <div key={task.id} className="flex items-start gap-2.5">
+                {taskList.map((task) => (
+                  <div
+                    key={task.id}
+                    onClick={() => toggleTask(task.id)}
+                    className="flex items-start gap-2.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-[#162016] transition-colors"
+                  >
                     {task.done ? (
                       <CheckCircle2 size={18} className="text-[#4caf50] mt-0.5 flex-shrink-0" />
                     ) : (
                       <Circle size={18} className="text-[#94a3b8] mt-0.5 flex-shrink-0" />
                     )}
-                    <span className={`text-sm ${task.done ? 'line-through text-[#94a3b8]' : 'text-[#1a1a2e] dark:text-white'}`}>
+                    <span className={`text-sm select-none ${task.done ? 'line-through text-[#94a3b8]' : 'text-[#1a1a2e] dark:text-white'}`}>
                       {language === 'bn' ? task.titleBn : task.title}
                     </span>
                   </div>
@@ -284,7 +313,7 @@ export default function Dashboard() {
                 ))}
               </div>
               <p className="text-[10px] text-center text-[#94a3b8] mt-3 italic">
-                {language === 'bn' ? '⚠️ ডেমো প্রিভিউ — উদাহরণ তথ্য' : '⚠️ Demo Preview — Sample data shown'}
+                {language === 'bn' ? '🌱 কিষাণঘর স্মার্ট এআই দ্বারা স্বয়ংক্রিয় সুপারিশকৃত' : '🌱 Powered by KishanGhar Smart Agricultural AI'}
               </p>
             </motion.div>
 
